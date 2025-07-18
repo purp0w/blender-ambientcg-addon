@@ -10,8 +10,9 @@ bl_info = {
 
 import bpy
 import os
-import urllib.request
 import zipfile
+import urllib.request
+from urllib import parse
 from bpy.props import StringProperty, EnumProperty
 from pathlib import Path
 
@@ -38,16 +39,34 @@ def get_cache_dir():
     return dir_path
 
 
+def get_info_from_url(url: str) -> list[str]:
+    parsed = (
+        url.replace("https://ambienntcg.com/get?file=", "")
+        .replace("-JPG.zip", "")
+        .replace("-PNG.zip", "")
+    )
+    return parsed.split("_")
+
+
 class MATERIAL_OT_fetch_and_create(bpy.types.Operator):
     bl_idname = "material.fetch_and_create"
     bl_label = "Fetch and Create Material"
     bl_options = {"REGISTER", "UNDO"}
 
     def execute(self, context):
-        material_name = context.scene.ambientcg_material_name
+        material_name: str = context.scene.ambientcg_material_name
         resolution = context.scene.ambientcg_resolution
 
-        url = f"https://ambientcg.com/get?file={material_name}_{resolution}-PNG.zip"
+        if material_name.startswith(
+            "https://ambienntcg.com/get?file="
+        ) and material_name.endswith(".zip"):
+            url = material_name
+            material_name, resolution = get_info_from_url(url)
+        elif material_name.startswith("https://ambienntcg.com/a/"):
+            url = material_name + f"_{resolution}-PNG.zip"
+            material_name = material_name.split("/")[-1]
+        else:
+            url = f"https://ambientcg.com/get?file={material_name}_{resolution}-PNG.zip"
 
         cache_dir = get_cache_dir()
         extract_path = cache_dir / f"{material_name}_{resolution}"
