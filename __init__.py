@@ -5,6 +5,9 @@ bl_info = {
     "blender": (4, 2, 0),
     "location": "Shader Editor > Sidebar > AmbientCG",
     "description": "One-click material creation from AmbientCG",
+    "warning": "Requires internet connection",
+    "doc_url": "https://github.com/ninofiliu/blender-ambientcg-addon",
+    "tracker_url": "https://github.com/ninofiliu/blender-ambientcg-addon/issues",
     "category": "Material",
 }
 
@@ -41,7 +44,7 @@ def get_cache_dir():
 
 def get_info_from_url(url: str) -> list[str]:
     parsed = (
-        url.replace("https://ambienntcg.com/get?file=", "")
+        url.replace("https://ambientcg.com/get?file=", "")
         .replace("-JPG.zip", "")
         .replace("-PNG.zip", "")
     )
@@ -52,19 +55,21 @@ class MATERIAL_OT_fetch_and_create(bpy.types.Operator):
     bl_idname = "material.fetch_and_create"
     bl_label = "Fetch and Create Material"
     bl_options = {"REGISTER", "UNDO"}
-
     def execute(self, context):
         material_name: str = context.scene.ambientcg_material_name
         resolution = context.scene.ambientcg_resolution
-
+        material_name.strip()
+        
+        if material_name.startswith("https://ambientcg.com/view?id="):
+            material_name = material_name.replace("https://ambientcg.com/view?id=", "")
+        elif material_name.startswith("https://ambientcg.com/a/"):
+            material_name = material_name.replace("https://ambientcg.com/a/", "")
+            url = f"https://ambientcg.com/get?file={material_name}_{resolution}-PNG.zip"
         if material_name.startswith(
-            "https://ambienntcg.com/get?file="
+            "https://ambientcg.com/get?file="
         ) and material_name.endswith(".zip"):
-            url = material_name
+            url = material_name.replace("JPG", "PNG")  # FIXME: Make this addon work with JPG as well
             material_name, resolution = get_info_from_url(url)
-        elif material_name.startswith("https://ambienntcg.com/a/"):
-            url = material_name + f"_{resolution}-PNG.zip"
-            material_name = material_name.split("/")[-1]
         else:
             url = f"https://ambientcg.com/get?file={material_name}_{resolution}-PNG.zip"
 
